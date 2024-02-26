@@ -32,7 +32,7 @@ pub async fn init_app() -> AnyResult<()> {
 
         let mut conn = get_db_conn(db_file).await?;
         run_migration(&mut conn).await?;
-        conn.close();
+        conn.close().await?;
     }
 
     Ok(())
