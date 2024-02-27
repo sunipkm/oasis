@@ -11,40 +11,16 @@ use anyhow::Result as AnyResult;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use sqlx::{pool::PoolConnection, FromRow, Sqlite, Transaction};
 
-enum Permission {
-    Guest = 0,
-    User = 1,
-    Admin = 9,
-}
-
-impl From<i8> for Permission {
-    fn from(p: i8) -> Self {
-        match p {
-            0 => Permission::Guest,
-            1 => Permission::User,
-            9 => Permission::Admin,
-            _ => Permission::Guest,
-        }
-    }
-}
-
-impl std::fmt::Display for Permission {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let p = match self {
-            Permission::Guest => "0",
-            Permission::User => "1",
-            Permission::Admin => "9",
-        };
-        write!(f, "{}", p)
-    }
-}
+const PERMISSION_GUEST: i8 = 0;
+const PERMISSION_USER: i8 = 1;
+const PERMISSION_ADMIN: i8 = 9;
 
 #[derive(FromRow)]
 pub struct User {
     pub user_id: i64,
     pub username: String,
     pub password: String,
-    pub permission: Permission,
+    pub permission: i8,
     pub created_at: i64,
 }
 
@@ -54,7 +30,7 @@ impl User {
             user_id: 0,
             username: req.username.to_string(),
             password: req.password.to_string(),
-            permission: Permission::Admin,
+            permission: PERMISSION_ADMIN,
             created_at,
         }
     }
@@ -64,7 +40,7 @@ impl User {
             user_id: 0,
             username: String::from("Guest"),
             password: String::new(),
-            permission: Permission::Guest,
+            permission: PERMISSION_GUEST,
             created_at,
         }
     }
@@ -117,7 +93,7 @@ impl User {
         let sql = "select * from USER where username = ?1";
         let query = Query::new(sql, args![username]);
 
-        Ok((db::fetch_single(query, conn).await?))
+        Ok(db::fetch_single(query, conn).await?)
     }
 
     pub async fn find_user_by_id(
