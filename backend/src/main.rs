@@ -4,7 +4,7 @@ mod api;
 mod entity;
 mod service;
 mod util;
-use crate::util::local_ip::ServerConfig;
+use crate::util::serverconfig::ServerConfig;
 use entity::{copy_move_task::CopyMoveTask, site::Site};
 use lazy_static::lazy_static;
 use rocket::fs::FileServer;
