@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::entity::copy_move_task::{CopyMoveFileRequest, CopyMoveTask};
 use crate::entity::error::Error;
 use crate::entity::file::{File, FileType};
@@ -50,7 +51,7 @@ async fn dir_content(
 ) -> Result<Json<Vec<File>>, Error> {
     let storage = state.get_site()?.storage.clone();
     let target_path = match path {
-        Some(dir) => PathBuf::from(&storage).join(&util::parse_encoded_url(dir)?),
+        Some(dir) => PathBuf::from(&storage).join(util::parse_encoded_url(dir)?),
         None => PathBuf::from(&storage),
     };
 
@@ -133,7 +134,7 @@ async fn file_content(
 ) -> Result<FileResponse, Error> {
     let target_path = get_target_path(state, path).map_err(|e| {
         eprintln!("{}", e);
-        return 400;
+        400
     })?;
 
     if !target_path.is_file() {
@@ -170,7 +171,7 @@ async fn update_file_name(
 ) -> Result<(), Error> {
     let current_file = get_target_path(state, path).map_err(|e| {
         eprintln!("{}", e);
-        return 400;
+        400
     })?;
 
     let target_file = current_file.parent().unwrap().join(&req_body.new_name);
@@ -217,7 +218,7 @@ async fn update_file_visibility(
 async fn delete_file(state: &State<AppState>, path: &str, _user: AuthAdmin) -> Result<(), Error> {
     let target_path = get_target_path(state, path).map_err(|e| {
         eprintln!("{}", e);
-        return 400;
+        400
     })?;
 
     if target_path.is_file() {
@@ -243,7 +244,7 @@ async fn video_track(
     state: &State<AppState>,
 ) -> Result<String, Error> {
     let storage = state.get_site()?.storage.clone();
-    let target_path = PathBuf::from(storage).join(&util::parse_encoded_url(path)?);
+    let target_path = PathBuf::from(storage).join(util::parse_encoded_url(path)?);
 
     let track_str = match track::get_track(target_path).await {
         Ok(str) => str,
@@ -288,7 +289,7 @@ async fn get_share_link(
 
     let target_path = get_target_path(state, path).map_err(|e| {
         eprintln!("{}", e);
-        return 400;
+        400
     })?;
 
     if !target_path.is_file() {
@@ -363,7 +364,7 @@ async fn get_copy_move_status(uuid: String, admin: AuthAdmin) -> Result<Json<Cop
 
 fn get_target_path(state: &State<AppState>, path: &str) -> AnyResult<PathBuf> {
     let storage = state.get_site()?.storage.clone();
-    let target_path = PathBuf::from(&storage).join(&util::parse_encoded_url(path)?);
+    let target_path = PathBuf::from(&storage).join(util::parse_encoded_url(path)?);
 
     if !target_path.exists() {
         return Err(anyhow::anyhow!("Invalid path: {:?}", target_path));
@@ -372,7 +373,7 @@ fn get_target_path(state: &State<AppState>, path: &str) -> AnyResult<PathBuf> {
     Ok(target_path)
 }
 
-fn get_relative_path(state: &State<AppState>, full_path: &PathBuf) -> AnyResult<PathBuf> {
+fn get_relative_path(state: &State<AppState>, full_path: &Path) -> AnyResult<PathBuf> {
     let storage = state.get_site()?.storage.clone();
     let relative_path = full_path.strip_prefix(storage)?;
 
@@ -381,7 +382,7 @@ fn get_relative_path(state: &State<AppState>, full_path: &PathBuf) -> AnyResult<
 
 async fn search_dir_all(
     state: &State<AppState>,
-    keywords: &Vec<&str>,
+    keywords: &[&str],
     user_permission: i8,
 ) -> AnyResult<Vec<File>> {
     let mut results = vec![];
@@ -393,7 +394,7 @@ async fn search_dir_all(
         let entry = entry?;
         let path = entry.path();
         if contains_all_keywords(path, keywords)
-            && max_permission_parent(&path.to_owned(), &storage, &hiddens) <= user_permission
+            && max_permission_parent(path, &storage, &hiddens) <= user_permission
         {
             let path_buf = PathBuf::from(path);
             let file = File::from_path(&path_buf, true, &storage, 0)?;
@@ -420,7 +421,7 @@ fn get_least_permission(file_path: &PathBuf, storage: &str, hiddens: &Vec<Hidden
 }
 
 // Check the max permission value of all the parents of the input file path.
-fn max_permission_parent(file_path: &PathBuf, storage: &str, hiddens: &Vec<Hidden>) -> i8 {
+fn max_permission_parent(file_path: &Path, storage: &str, hiddens: &Vec<Hidden>) -> i8 {
     let mut least_permission = 0;
     let storage_path = PathBuf::from(storage);
 
@@ -436,7 +437,7 @@ fn max_permission_parent(file_path: &PathBuf, storage: &str, hiddens: &Vec<Hidde
 }
 
 // All keywords are lower case before sending to backend
-fn contains_all_keywords(path: &Path, keywords: &Vec<&str>) -> bool {
+fn contains_all_keywords(path: &Path, keywords: &[&str]) -> bool {
     let filename = path.file_name().unwrap().to_str().unwrap().to_lowercase();
     for keyword in keywords.iter() {
         let keyword_low = keyword.to_lowercase();
@@ -446,7 +447,7 @@ fn contains_all_keywords(path: &Path, keywords: &Vec<&str>) -> bool {
 
         // Keywords start with "." indicates a filter for file type.
         // Eg. ".js" means searching for js files, and json files should be excluded.
-        if keyword_low.starts_with(".") {
+        if keyword_low.starts_with('.') {
             if path.is_dir() {
                 return false;
             }
@@ -464,7 +465,7 @@ fn contains_all_keywords(path: &Path, keywords: &Vec<&str>) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 async fn zip_dir<W: AsyncWrite + Unpin>(
@@ -486,7 +487,7 @@ async fn zip_dir<W: AsyncWrite + Unpin>(
             Some(p) => p,
             None => path,
         };
-        let filename = match entry.path().strip_prefix(&parent_dir) {
+        let filename = match entry.path().strip_prefix(parent_dir) {
             Ok(v) => v.to_str().unwrap(),
             Err(_) => continue,
         };

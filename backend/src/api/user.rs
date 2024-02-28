@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::entity::error::Error;
 use crate::entity::request::{
     ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, ResetPasswordRequest,
@@ -196,7 +197,7 @@ async fn reset_password(
 
 fn set_access_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult<AccessToken> {
     let access_token = user.generate_access_token();
-    let access_token_str = access_token.encode(&secret)?;
+    let access_token_str = access_token.encode(secret)?;
     let cookie = Cookie::build(ACCESS_TOKEN, access_token_str)
         .path("/")
         .http_only(true)
@@ -209,7 +210,7 @@ fn set_access_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult
 }
 
 fn set_refresh_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult<()> {
-    let refresh_token_str = user.generate_refresh_token().encode(&secret)?;
+    let refresh_token_str = user.generate_refresh_token().encode(secret)?;
     let cookie = Cookie::build(REFRESH_TOKEN, refresh_token_str)
         .path("/api/user")
         .http_only(true)

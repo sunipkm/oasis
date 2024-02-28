@@ -7,7 +7,7 @@ use crate::util::{
 use anyhow::Result as AnyResult;
 use sqlx::pool::PoolConnection;
 use sqlx::{FromRow, Sqlite, Transaction};
-use std::path::PathBuf;
+use std::path::Path;
 
 #[derive(FromRow, Default, Debug)]
 pub struct Site {
@@ -24,7 +24,7 @@ pub struct Site {
 }
 
 impl Site {
-    pub fn new(name: &str, storage: &PathBuf, language: &str, created_at: i64) -> Self {
+    pub fn new(name: &str, storage: &Path, language: &str, created_at: i64) -> Self {
         let secret = util::generate_secret_key(32);
         let version = util::get_version_constant();
         let storage_str = storage.to_str().unwrap().to_owned();

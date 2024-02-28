@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::entity::error::Error;
 use crate::entity::request::{CancelUploadRequest, UploadRequest};
 use crate::entity::upload_task::UploadTask;
@@ -9,7 +10,7 @@ use rocket::fs::TempFile;
 use rocket::serde::json::Json;
 use rocket::tokio::fs;
 use rocket::{Route, State};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::fs::OpenOptions;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -26,7 +27,7 @@ async fn pre_upload(
     user: AuthAdmin,
 ) -> Result<String, Error> {
     let storage = state.get_site()?.storage.clone();
-    let target_dir = PathBuf::from(&storage).join(&util::parse_encoded_url(&req_body.target)?);
+    let target_dir = PathBuf::from(&storage).join(util::parse_encoded_url(&req_body.target)?);
     if !target_dir.exists() || !target_dir.is_dir() {
         return Err(Error::BadRequest);
     }
@@ -38,7 +39,7 @@ async fn pre_upload(
 
     let upload_task = UploadTask::new(&req_body, user.uid, target_dir);
     let uuid = upload_task.uuid.clone();
-    let temp_upload_dir = PathBuf::from(util::get_temp_path()).join(&upload_task.uuid);
+    let temp_upload_dir = util::get_temp_path().join(&upload_task.uuid);
     fs::create_dir_all(temp_upload_dir).await?;
     state.push_upload_task(upload_task)?;
 
@@ -62,7 +63,7 @@ async fn upload_file_slices(
         return Err(Error::Unauthorized);
     }
 
-    let temp_upload_dir = PathBuf::from(util::get_temp_path()).join(uuid);
+    let temp_upload_dir = util::get_temp_path().join(uuid);
     if !temp_upload_dir.exists() || !temp_upload_dir.is_dir() {
         return Err(Error::BadRequest);
     }
@@ -78,7 +79,7 @@ async fn upload_file_slices(
 
 #[post("/finish-upload/<uuid>")]
 async fn finish_upload(state: &State<AppState>, uuid: &str, _user: AuthAdmin) -> Result<(), Error> {
-    let temp_upload_dir = PathBuf::from(util::get_temp_path()).join(uuid);
+    let temp_upload_dir = util::get_temp_path().join(uuid);
     if !temp_upload_dir.exists() || !temp_upload_dir.is_dir() {
         return Err(Error::BadRequest);
     }
@@ -129,7 +130,7 @@ async fn remove_upload_task(
             return Err(anyhow::anyhow!("User id not match to remove task"));
         }
 
-        let temp_upload_dir = PathBuf::from(util::get_temp_path()).join(&task.uuid);
+        let temp_upload_dir = util::get_temp_path().join(&task.uuid);
         if temp_upload_dir.exists() && temp_upload_dir.is_dir() {
             fs::remove_dir_all(temp_upload_dir).await?;
         }
@@ -142,7 +143,7 @@ async fn remove_upload_task(
 
 async fn combine_file_slices(
     target_file_path: &PathBuf,
-    temp_upload_dir: &PathBuf,
+    temp_upload_dir: &Path,
     req_file_size: u64,
 ) -> AnyResult<()> {
     let mut target_file = OpenOptions::new()

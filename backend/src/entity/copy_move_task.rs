@@ -83,7 +83,7 @@ impl CopyMoveTask {
             }
 
             if !task.is_copy {
-                if let Err(e) = fs_extra::remove_items(&vec![&task.source]) {
+                if let Err(e) = fs_extra::remove_items(&[&task.source]) {
                     eprintln!("Error: {}", e);
                     task.update_progress(0.0, CopyMoveTaskStatus::Failed);
                     return;

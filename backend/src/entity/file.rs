@@ -1,6 +1,6 @@
 use anyhow::Result as AnyResult;
 use rocket::serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -38,7 +38,7 @@ impl FileType {
         }
     }
 
-    pub fn get_file_type(path: &PathBuf) -> Self {
+    pub fn get_file_type(path: &Path) -> Self {
         match (path.is_dir(), path.extension()) {
             (true, _) => Self::Dir,
             (false, Some(ext)) => Self::infer_file_type(ext.to_str().unwrap_or("")),
@@ -49,7 +49,7 @@ impl FileType {
 
 impl File {
     pub fn from_path(
-        path: &PathBuf,
+        path: &Path,
         need_dir: bool,
         storage: &str,
         least_permission: i8,

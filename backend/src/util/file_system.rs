@@ -45,7 +45,7 @@ pub fn get_available_space(storage: &str) -> u64 {
         }
     }
 
-    return 0;
+    0
 }
 
 // All text file needs to check the encoding method.
@@ -60,7 +60,7 @@ pub async fn read_text_file(path: PathBuf) -> AnyResult<String> {
         return Err(anyhow::anyhow!("File encoding malformed"));
     }
 
-    Ok(cow.to_owned().to_string())
+    Ok(cow.into_owned().to_string())
 }
 
 fn detect_encoding(buffer: &[u8]) -> AnyResult<&'static Encoding> {
@@ -105,7 +105,7 @@ mod tests {
         let rt = rocket::tokio::runtime::Runtime::new().unwrap();
         let decoded_str = rt.block_on(read_text_file(path)).unwrap();
         println!("Decoded string: {}", &decoded_str);
-        assert!(decoded_str.len() > 0);
+        assert!(!decoded_str.is_empty());
     }
 
     #[test]

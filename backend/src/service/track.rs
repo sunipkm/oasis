@@ -2,7 +2,7 @@ use crate::util::file_system;
 use anyhow::Result as AnyResult;
 use regex::Regex;
 use std::path::PathBuf;
-const LIMIT: u64 = 1 * 1024 * 1024;
+const LIMIT: u64 = 1024 * 1024;
 
 pub async fn get_track(vtt_path: PathBuf) -> AnyResult<String> {
     if vtt_path.exists() && vtt_path.is_file() {
@@ -42,7 +42,7 @@ async fn srt_to_vtt(srt_str: &str) -> AnyResult<String> {
         }
 
         if regex_time.is_match(line) {
-            let time_line = line.replace(",", ".");
+            let time_line = line.replace(',', ".");
             vtt_str.push_str(&time_line);
             vtt_str.push('\n');
         } else {
@@ -85,6 +85,6 @@ mod tests {
         let vtt = rt.block_on(srt_to_vtt(srt)).unwrap();
 
         println!("Vtt result:\n {}", &vtt);
-        assert!(vtt.len() > 0);
+        assert!(!vtt.is_empty());
     }
 }

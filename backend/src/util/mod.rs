@@ -97,6 +97,6 @@ mod test {
         let input = "Hello world";
         let sha_result = sha256(input, "12ab34cd");
         println!("sha result is {}", &sha_result);
-        assert!(sha_result.len() > 0);
+        assert!(!sha_result.is_empty());
     }
 }

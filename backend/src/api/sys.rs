@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::entity::error::Error;
 use crate::entity::hidden::Hidden;
 use crate::entity::request::{SetupRequest, UpdateSiteRequest};
@@ -32,7 +33,7 @@ async fn setup(state: &State<AppState>, req_body: Json<SetupRequest>) -> Result<
 
     let storage = util::parse_encoded_url(&req_body.storage)?;
 
-    if req_body.sitename.len() == 0
+    if req_body.sitename.is_empty()
         || req_body.username.len() < 2
         || req_body.password.len() < 6
         || !storage.exists()

@@ -31,12 +31,12 @@ impl Fairing for StaticFileCache {
 
 // Do not cache development related files in debug mode.
 #[cfg(debug_assertions)]
-fn req_static<'r>(req_path: &Path) -> bool {
+fn req_static(req_path: &Path) -> bool {
     req_path.starts_with("/api/file/") && !req_path.starts_with("/api/file/copy-move-status")
 }
 
 #[cfg(not(debug_assertions))]
-fn req_static<'r>(req_path: &Path) -> bool {
+fn req_static(req_path: &Path) -> bool {
     for ext in constants::CACHE_FILE_EXTS.iter() {
         if req_path.ends_with(ext) {
             return true;

@@ -34,7 +34,7 @@ where
     T: Send + Unpin + for<'a> FromRow<'a, SqliteRow>,
 {
     let stmt = prepare_sql(query.sql, &query.args);
-    Ok(stmt.fetch_optional(conn).await?)
+    stmt.fetch_optional(conn).await
 }
 
 pub async fn fetch_multiple<'r, T>(
@@ -45,7 +45,7 @@ where
     T: Send + Unpin + for<'a> FromRow<'a, SqliteRow>,
 {
     let stmt = prepare_sql(query.sql, &query.args);
-    Ok(stmt.fetch_all(conn).await?)
+    stmt.fetch_all(conn).await
 }
 
 pub async fn execute<'r>(query: Query<'r>, tx: &mut Transaction<'_, Sqlite>) -> Result<i64, Error> {
@@ -62,7 +62,7 @@ pub async fn execute<'r>(query: Query<'r>, tx: &mut Transaction<'_, Sqlite>) -> 
 
 fn prepare_sql<'a, T>(
     sql: &'a str,
-    args: &'a Vec<String>,
+    args: &'a [String],
 ) -> sqlx::query::QueryAs<'a, sqlx::Sqlite, T, sqlx::sqlite::SqliteArguments<'a>>
 where
     T: Send + Unpin + for<'b> FromRow<'b, SqliteRow>,
@@ -77,7 +77,7 @@ where
 
 fn prepare_exec_sql<'a>(
     sql: &'a str,
-    args: &'a Vec<String>,
+    args: &'a [String],
 ) -> sqlx::query::Query<'a, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'a>> {
     let mut stmt = sqlx::query(sql);
     for arg in args.iter() {

@@ -44,13 +44,13 @@ impl AppState {
     }
 
     pub async fn get_pool_conn(&self) -> Result<PoolConnection<Sqlite>, sqlx::Error> {
-        Ok(self.pool.acquire().await?)
+        self.pool.acquire().await
     }
 
     pub fn get_site(&self) -> AnyResult<MutexGuard<Site>> {
         match self.site.lock() {
             Ok(v) => Ok(v),
-            Err(e) => return Err(anyhow::anyhow!("Cannot retrieve site from state: {}", e)),
+            Err(e) => Err(anyhow::anyhow!("Cannot retrieve site from state: {}", e)),
         }
     }
 
@@ -64,7 +64,7 @@ impl AppState {
     pub fn get_upload_tasks(&self) -> AnyResult<MutexGuard<Vec<UploadTask>>> {
         match self.uploads.lock() {
             Ok(v) => Ok(v),
-            Err(e) => return Err(anyhow::anyhow!("Cannot retrieve site from state: {}", e)),
+            Err(e) => Err(anyhow::anyhow!("Cannot retrieve site from state: {}", e)),
         }
     }
 

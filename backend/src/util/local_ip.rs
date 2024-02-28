@@ -35,29 +35,31 @@ impl ServerConfig {
         if conf_file.exists() && conf_file.is_file() {
             let file = File::open(conf_file)?;
             let lines = BufReader::new(file).lines();
-            for line in lines {
-                if let Ok(content) = line {
-                    if content.starts_with("#") || content.trim().len() == 0 {
-                        continue;
-                    }
+            for line in lines.flatten() {
+                let mut content = line.trim();
 
-                    let parts: Vec<&str> = content.split("=").collect();
-                    if parts.len() != 2 {
-                        return Err(malform);
-                    }
+                content = content.split('#').next().unwrap_or(content).trim();
 
-                    match parts[0].trim() {
-                        "ip" => server.ip = IpAddr::from_str(parts[1].trim())?,
-                        "port" => server.port = parts[1].trim().parse()?,
-                        "certs" => server.certs = Some(parts[1].trim().to_string()),
-                        "key" => server.key = Some(parts[1].trim().to_string()),
-                        _ => return Err(malform),
-                    }
+                if content.is_empty() {
+                    continue;
+                }
+
+                let parts: Vec<&str> = content.split('=').map(|e| e.trim()).collect();
+                if parts.len() != 2 {
+                    return Err(malform);
+                }
+
+                match parts[0].to_lowercase().as_str() {
+                    "ip" => server.ip = IpAddr::from_str(parts[1].trim())?,
+                    "port" => server.port = parts[1].trim().parse()?,
+                    "certs" => server.certs = Some(parts[1].trim().to_string()),
+                    "key" => server.key = Some(parts[1].trim().to_string()),
+                    _ => return Err(malform),
                 }
             }
+            return Ok(server);
         }
-
-        Ok(server)
+        Err(malform)
     }
 
     pub fn get_tls_str(&self) -> String {
@@ -89,7 +91,7 @@ impl LocalIpRange {
 pub fn show(config: &ServerConfig) -> AnyResult<()> {
     let mut ips = vec![];
     if config.ip != DEFAULT_IP {
-        ips.push(config.ip.clone());
+        ips.push(config.ip);
     } else {
         match std::env::consts::OS {
             "linux" => ips = retrieve_ip_linux(),
@@ -122,10 +124,10 @@ fn retrieve_ip_linux() -> Vec<IpAddr> {
 }
 
 fn retrieve_ip_win_mac() -> Vec<IpAddr> {
-    let mut ranges = vec![];
-    ranges.push(LocalIpRange::new([192, 168, 0, 0], [192, 168, 255, 255]));
-    ranges.push(LocalIpRange::new([172, 16, 0, 0], [172, 31, 255, 255]));
-    ranges.push(LocalIpRange::new([10, 0, 0, 0], [10, 255, 255, 255]));
+    let ranges = vec![
+    LocalIpRange::new([192, 168, 0, 0], [192, 168, 255, 255]),
+    LocalIpRange::new([172, 16, 0, 0], [172, 31, 255, 255]),
+    LocalIpRange::new([10, 0, 0, 0], [10, 255, 255, 255])];
 
     // the name is not sure, it could be "wlan" or "以太网" on some devices.
     // let names = vec!["ethernet", "wi-fi", "en0"];

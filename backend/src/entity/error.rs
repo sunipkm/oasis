@@ -9,6 +9,7 @@ pub enum Error {
     BadRequest,
     Conflict,
     Forbidden,
+    #[allow(clippy::enum_variant_names)]
     InternalServerError,
     NotFound,
     Unauthorized,

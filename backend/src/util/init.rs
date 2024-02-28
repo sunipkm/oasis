@@ -96,15 +96,16 @@ fn get_db_file_location() -> PathBuf {
 fn compare_version(va: &str, vb: &str) -> i8 {
     use std::cmp::min;
 
-    let parts_a: Vec<u64> = va.split(".").map(|e| e.parse().unwrap()).collect();
-    let parts_b: Vec<u64> = vb.split(".").map(|e| e.parse().unwrap()).collect();
+    let parts_a: Vec<u64> = va.split('.').map(|e| e.parse().unwrap()).collect();
+    let parts_b: Vec<u64> = vb.split('.').map(|e| e.parse().unwrap()).collect();
     let len_a = parts_a.len();
     let len_b = parts_b.len();
 
     for i in 0..min(len_a, len_b) {
         if parts_a[i] > parts_b[i] {
             return 1;
-        } else if parts_a[i] < parts_b[i] {
+        }
+        if parts_a[i] < parts_b[i] {
             return -1;
         }
     }

@@ -1,5 +1,3 @@
-use std::path::Display;
-
 use super::request::SetupRequest;
 use crate::{
     args,
@@ -12,7 +10,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use sqlx::{pool::PoolConnection, FromRow, Sqlite, Transaction};
 
 const PERMISSION_GUEST: i8 = 0;
-const PERMISSION_USER: i8 = 1;
+// const PERMISSION_USER: i8 = 1;
 const PERMISSION_ADMIN: i8 = 9;
 
 #[derive(FromRow)]
