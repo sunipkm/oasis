@@ -4,6 +4,7 @@ pub mod file_system;
 pub mod init;
 pub mod local_ip;
 pub mod rocket_env;
+pub mod serverconfig;
 use anyhow::Result as AnyResult;
 use rand::{distributions::Alphanumeric, Rng};
 use sha2::{Digest, Sha256};

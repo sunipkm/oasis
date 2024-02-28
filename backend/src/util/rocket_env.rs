@@ -1,4 +1,4 @@
-use super::local_ip::ServerConfig;
+use super::serverconfig::ServerConfig;
 use std::collections::HashMap;
 
 // use this instead of `dotenv` because of the conflict
