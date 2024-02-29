@@ -12,7 +12,14 @@ const fs = require('fs');
 const process = require("process");
 const child_process = require("child_process");
 const path = require("path");
+const { release } = require('os');
 const argv = process.argv.slice(2);
+
+var targetdir = "target/";
+targetdir += argv.includes('cross') ? "x86_64-pc-windows-gnu/" : "";
+targetdir += "release/";
+
+var releasedir = argv.includes('cross') ? "release-cross/" : "release/";
 
 const copyRecursiveSync = (src, dest) => {
   const exists = fs.existsSync(src);
@@ -35,11 +42,13 @@ const runCommand = (cmd) => {
 }
 
 const createReleaseDir = () => {
-  if (fs.existsSync("release")) {
-    fs.rmSync("release", { recursive: true, force: true });
+  if (fs.existsSync(releasedir)) {
+    fs.rmSync(releasedir, { recursive: true, force: true });
   }
 
-  fs.mkdirSync("release/oasis", { recursive: true }, (e) => {
+  releasedir = releasedir + "oasis/";
+
+  fs.mkdirSync(releasedir, { recursive: true }, (e) => {
     if (e) {
       throw e;
     }
@@ -54,14 +63,14 @@ createReleaseDir();
 process.chdir("frontend");
 runCommand("npm i"); // Install frontend dependencies
 runCommand("npm run build"); // Build the frontend
-copyRecursiveSync("public", "../release/oasis/public"); // Copy the frontend build to the release directory
+copyRecursiveSync("public", "../" + releasedir + "public"); // Copy the frontend build to the release directory
 
 process.chdir("../backend");
 runCommand(compilecmd); // Compile the backend
-copyRecursiveSync("target/release/" + filename, "../release/oasis/" + filename); // Copy the backend to the release directory
-copyRecursiveSync("assets/oasis.conf.sample", "../release/oasis/oasis.conf.sample"); // Copy the sample configuration file to the release directory
+copyRecursiveSync(targetdir + filename, "../" + releasedir + filename); // Copy the backend to the release directory
+copyRecursiveSync("assets/oasis.conf.sample", "../" + releasedir + "oasis.conf.sample"); // Copy the sample configuration file to the release directory
 
-process.chdir("../release/oasis");
+process.chdir("../" + releasedir);
 fs.chmodSync(filename, 0o755); // Make the backend executable
 
 console.log("\nBuild complete. Please check the 'release' directory.");
