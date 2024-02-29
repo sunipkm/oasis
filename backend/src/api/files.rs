@@ -14,8 +14,10 @@ use crate::service::track;
 use crate::util::constants::ZIP_BUFFER_SIZE;
 use crate::util::{self, file_system};
 use anyhow::Result as AnyResult;
-use async_zip::{write::ZipFileWriter, Compression, ZipEntryBuilder};
+use async_zip::base::write::EntryStreamWriter;
+use async_zip::{tokio::write::ZipFileWriter, Compression, ZipEntryBuilder};
 use rocket::fs::NamedFile;
+use rocket::futures::AsyncWriteExt;
 use rocket::response::stream::ByteStream;
 use rocket::serde::json::Json;
 use rocket::tokio::fs;
@@ -23,6 +25,8 @@ use rocket::tokio::io::{self, AsyncReadExt, AsyncWrite};
 use rocket::{Route, State};
 use sqlx::Acquire;
 use std::path::{Path, PathBuf};
+use tokio_util::bytes::buf;
+use tokio_util::compat::Compat;
 use walkdir::WalkDir;
 
 pub fn route() -> Vec<Route> {
@@ -88,7 +92,7 @@ async fn download_dir(
 ) -> ByteStream![Vec<u8>] {
     let (mut writer, mut reader) = tokio::io::duplex(ZIP_BUFFER_SIZE);
     let target_path = get_target_path(state, path).unwrap();
-    rocket::tokio::spawn(async move {
+    tokio::spawn(async move {
         if let Err(e) = zip_dir(&mut writer, &target_path).await {
             println!("Error ziping dir: {}", e);
         }
@@ -111,7 +115,7 @@ async fn download_dir(
 async fn create_dir(
     state: &State<AppState>,
     req_body: Json<CreateDirRequest>,
-    _user: AuthAdmin,
+    #[allow(unused)] _user: AuthAdmin,
 ) -> Result<(), Error> {
     let storage = state.get_site()?.storage.clone();
     let parent = util::parse_encoded_url(&req_body.parent)?;
@@ -313,7 +317,7 @@ async fn search_files(
 ) -> Result<Json<Vec<File>>, Error> {
     let decoded_keywords = util::parse_encoded_url(keywords)?;
     let decoded_keywords_str = decoded_keywords.as_os_str().to_str().unwrap();
-    let keywords_splits: Vec<&str> = decoded_keywords_str.split("+").collect();
+    let keywords_splits: Vec<&str> = decoded_keywords_str.split('+').collect();
     let results = search_dir_all(state, &keywords_splits, user.permission).await?;
 
     Ok(Json(results))
@@ -406,7 +410,7 @@ async fn search_dir_all(
 }
 
 // Check the permission setting for the exact input file path only.
-fn get_least_permission(file_path: &PathBuf, storage: &str, hiddens: &Vec<Hidden>) -> i8 {
+fn get_least_permission(file_path: &PathBuf, storage: &str, hiddens: &[Hidden]) -> i8 {
     let storage_path = PathBuf::from(storage);
 
     for hidden in hiddens.iter() {
@@ -421,7 +425,7 @@ fn get_least_permission(file_path: &PathBuf, storage: &str, hiddens: &Vec<Hidden
 }
 
 // Check the max permission value of all the parents of the input file path.
-fn max_permission_parent(file_path: &Path, storage: &str, hiddens: &Vec<Hidden>) -> i8 {
+fn max_permission_parent(file_path: &Path, storage: &str, hiddens: &[Hidden]) -> i8 {
     let mut least_permission = 0;
     let storage_path = PathBuf::from(storage);
 
@@ -468,11 +472,12 @@ fn contains_all_keywords(path: &Path, keywords: &[&str]) -> bool {
     true
 }
 
-async fn zip_dir<W: AsyncWrite + Unpin>(
-    writer: &mut W,
-    path: &PathBuf,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut writer = ZipFileWriter::new(writer);
+async fn zip_dir<W>(writer: &mut W, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>>
+where
+    W: AsyncWrite + Unpin,
+{
+    let mut buf = vec![0; 8192]; // 8KB buffer
+    let mut writer = ZipFileWriter::with_tokio(writer);
     let mut it = WalkDir::new(path).into_iter();
     while let Some(Ok(entry)) = it.next() {
         if !entry.file_type().is_file() {
@@ -491,11 +496,19 @@ async fn zip_dir<W: AsyncWrite + Unpin>(
             Ok(v) => v.to_str().unwrap(),
             Err(_) => continue,
         };
-        let entry_op =
-            ZipEntryBuilder::new(filename.to_owned(), Compression::Stored).unix_permissions(0o644);
+        let entry_op = ZipEntryBuilder::new(filename.into(), Compression::Stored)
+            .unix_permissions(0o644)
+            .build();
         let mut file = tokio::fs::File::open(entry.path()).await?;
         let mut file_writer = writer.write_entry_stream(entry_op).await?;
-        io::copy(&mut file, &mut file_writer).await?;
+        loop {
+            // copy file content to zip file
+            let n = file.read(&mut buf).await?;
+            if n == 0 {
+                break;
+            }
+            file_writer.write_all(buf[..n].as_ref()).await?;
+        }
         file_writer.close().await?;
     }
 

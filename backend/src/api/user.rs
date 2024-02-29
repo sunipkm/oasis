@@ -198,11 +198,11 @@ async fn reset_password(
 fn set_access_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult<AccessToken> {
     let access_token = user.generate_access_token();
     let access_token_str = access_token.encode(secret)?;
-    let cookie = Cookie::build(ACCESS_TOKEN, access_token_str)
+    let cookie = Cookie::build((ACCESS_TOKEN, access_token_str))
         .path("/")
         .http_only(true)
         .max_age(time::Duration::minutes(ACCESS_TOKEN_MINS))
-        .finish();
+        .build();
 
     jar.add(cookie);
 
@@ -211,11 +211,11 @@ fn set_access_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult
 
 fn set_refresh_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResult<()> {
     let refresh_token_str = user.generate_refresh_token().encode(secret)?;
-    let cookie = Cookie::build(REFRESH_TOKEN, refresh_token_str)
+    let cookie = Cookie::build((REFRESH_TOKEN, refresh_token_str))
         .path("/api/user")
         .http_only(true)
         .max_age(time::Duration::days(REFRESH_TOKEN_DAYS))
-        .finish();
+        .build();
 
     jar.add(cookie);
 
@@ -223,12 +223,12 @@ fn set_refresh_token(user: &User, secret: &str, jar: &CookieJar<'_>) -> AnyResul
 }
 
 fn remove_tokens(jar: &CookieJar<'_>) {
-    jar.remove(Cookie::named(ACCESS_TOKEN));
+    jar.remove(Cookie::from(ACCESS_TOKEN));
 
-    let cookie_refresh = Cookie::build(REFRESH_TOKEN, "")
+    let cookie_refresh = Cookie::build(REFRESH_TOKEN)
         .path("/api/user")
         .http_only(true)
-        .finish();
+        .build();
 
     jar.remove(cookie_refresh);
 }

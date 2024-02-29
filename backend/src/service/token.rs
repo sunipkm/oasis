@@ -116,7 +116,7 @@ impl<'r> FromRequest<'r> for RefreshToken {
             }
         }
 
-        Outcome::Failure((Status::BadRequest, Error::BadRequest))
+        Outcome::Error((Status::BadRequest, Error::BadRequest))
     }
 }
 

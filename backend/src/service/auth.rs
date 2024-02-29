@@ -36,7 +36,7 @@ impl<'r> FromRequest<'r> for AuthUser {
                                     permission: token.permission,
                                 });
                             } else {
-                                return Outcome::Failure((
+                                return Outcome::Error((
                                     Status::Unauthorized,
                                     Error::Unauthorized,
                                 ));
@@ -47,7 +47,7 @@ impl<'r> FromRequest<'r> for AuthUser {
             }
         }
 
-        Outcome::Failure((Status::Unauthorized, Error::Unauthorized))
+        Outcome::Error((Status::Unauthorized, Error::Unauthorized))
     }
 }
 
@@ -63,13 +63,13 @@ impl<'r> FromRequest<'r> for AuthAdmin {
                         if token.uid > 0 && token.permission == 9 {
                             return Outcome::Success(AuthAdmin { uid: token.uid });
                         } else {
-                            return Outcome::Failure((Status::Unauthorized, Error::Unauthorized));
+                            return Outcome::Error((Status::Unauthorized, Error::Unauthorized));
                         }
                     }
                 }
             }
         }
 
-        Outcome::Failure((Status::Unauthorized, Error::Unauthorized))
+        Outcome::Error((Status::Unauthorized, Error::Unauthorized))
     }
 }

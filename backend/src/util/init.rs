@@ -73,7 +73,7 @@ async fn run_migration(conn: &mut SqliteConnection) -> AnyResult<()> {
     let migration_dir = ASSETS
         .get_dir("migrations")
         .ok_or(anyhow::anyhow!("Migration dir not found"))?;
-    let migrator = Migrator::new(MigrationDir::new(migration_dir)).await?;
+    let migrator = Migrator::new(MigrationDir::new(migration_dir.to_owned())).await?;
     migrator.run(conn).await?;
 
     Ok(())

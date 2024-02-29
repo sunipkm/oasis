@@ -81,13 +81,13 @@ impl<'r> FromRequest<'r> for Range {
                 // start value must be valid.
                 let start: u64 = match parts.get(1) {
                     Some(v) => v.parse().unwrap(),
-                    None => return Outcome::Failure(bad_request),
+                    None => return Outcome::Error(bad_request),
                 };
 
                 // end value could be empty, but must not be smaller than start value.
                 let end: u64 = parts.get(2).unwrap_or(&"0").parse().unwrap_or(0);
                 if end < start && end != 0 {
-                    return Outcome::Failure(bad_request);
+                    return Outcome::Error(bad_request);
                 }
 
                 Outcome::Success(Range {

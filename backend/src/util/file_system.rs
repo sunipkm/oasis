@@ -3,15 +3,14 @@ use chardetng::EncodingDetector;
 use encoding_rs::Encoding;
 use rocket::tokio::fs;
 use std::path::PathBuf;
-use sysinfo::{DiskExt, System, SystemExt};
+use sysinfo::Disks;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub fn get_system_volumes() -> AnyResult<Vec<String>> {
-    let mut sys = System::new_all();
-    sys.refresh_all();
+    let disks = Disks::new_with_refreshed_list();
 
     let mut volumes = vec![];
-    for disk in sys.disks() {
+    for disk in disks.list() {
         volumes.push(disk.mount_point().to_string_lossy().to_string());
     }
 
@@ -36,10 +35,9 @@ pub async fn get_sub_dirs(dir: &PathBuf) -> AnyResult<Vec<PathBuf>> {
 }
 
 pub fn get_available_space(storage: &str) -> u64 {
-    let mut sys = System::new_all();
-    sys.refresh_all();
+    let disks = Disks::new_with_refreshed_list();
 
-    for disk in sys.disks() {
+    for disk in disks.list() {
         if storage.starts_with(&disk.mount_point().to_string_lossy().to_string()) {
             return disk.available_space();
         }

@@ -1,4 +1,6 @@
-use sqlx::{pool::PoolConnection, sqlite::SqliteRow, Error, FromRow, Sqlite, Transaction};
+use sqlx::{
+    pool::PoolConnection, sqlite::SqliteRow, Error, Executor, FromRow, Sqlite, Transaction,
+};
 
 #[derive(Debug)]
 pub struct Query<'a> {
@@ -33,8 +35,13 @@ pub async fn fetch_single<'r, T>(
 where
     T: Send + Unpin + for<'a> FromRow<'a, SqliteRow>,
 {
-    let stmt = prepare_sql(query.sql, &query.args);
-    stmt.fetch_optional(conn).await
+    let stmt: sqlx::query::QueryAs<'_, Sqlite, T, sqlx::sqlite::SqliteArguments<'_>> =
+        prepare_sql(query.sql, &query.args);
+
+    conn.fetch_optional(stmt)
+        .await?
+        .map(|u| T::from_row(&u))
+        .transpose()
 }
 
 pub async fn fetch_multiple<'r, T>(
@@ -44,17 +51,27 @@ pub async fn fetch_multiple<'r, T>(
 where
     T: Send + Unpin + for<'a> FromRow<'a, SqliteRow>,
 {
-    let stmt = prepare_sql(query.sql, &query.args);
-    stmt.fetch_all(conn).await
+    let stmt: sqlx::query::QueryAs<'_, Sqlite, T, sqlx::sqlite::SqliteArguments<'_>> =
+        prepare_sql(query.sql, &query.args);
+
+    let res = conn
+        .fetch_all(stmt)
+        .await?
+        .iter()
+        .map(|row| T::from_row(row))
+        .collect::<Result<Vec<T>, Error>>()?;
+
+    Ok(res)
 }
 
 pub async fn execute<'r>(query: Query<'r>, tx: &mut Transaction<'_, Sqlite>) -> Result<i64, Error> {
     let mut row_id = 0;
     let stmt = prepare_exec_sql(query.sql, &query.args);
+
     if query.sql.to_lowercase().starts_with("insert") {
-        row_id = stmt.execute(&mut *tx).await?.last_insert_rowid();
+        row_id = tx.execute(stmt).await?.last_insert_rowid();
     } else {
-        stmt.execute(&mut *tx).await?;
+        tx.execute(stmt).await?;
     }
 
     Ok(row_id)
