@@ -12,7 +12,6 @@ const fs = require('fs');
 const process = require("process");
 const child_process = require("child_process");
 const path = require("path");
-const { release } = require('os');
 const argv = process.argv.slice(2);
 
 var targetdir = "target/";
