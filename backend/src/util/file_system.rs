@@ -81,19 +81,24 @@ pub async fn write_text_file(path: &PathBuf, content: &str) -> AnyResult<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
+    #[cfg(target_os = "windows")]
+    const HOME: &str = "USERPROFILE";
+    #[cfg(not(target_os = "windows"))]
+    const HOME: &str = "HOME";
+
     use super::*;
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_get_sub_directories() {
         use tokio::runtime::Runtime;
 
-        let path = PathBuf::from("/home");
+        let path = PathBuf::from(env::var(HOME).unwrap().to_owned());
         let rt = Runtime::new().unwrap();
         let sub_directories = rt.block_on(get_sub_dirs(&path)).unwrap();
 
         println!("sub_directories: {:?}", &sub_directories);
-        assert!(sub_directories.len() > 0);
+        assert!(!sub_directories.is_empty());
     }
 
     #[test]
@@ -107,10 +112,9 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os = "linux")]
     fn test_disk_space() {
-        let storage = "/home";
-        let space = get_available_space(storage);
+        let storage = env::var(HOME).unwrap();
+        let space = get_available_space(&storage);
         println!("Space in {} is {}", storage, space);
         assert!(space > 0);
     }
