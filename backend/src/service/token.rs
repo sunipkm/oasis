@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 use super::app_state::AppState;
 use crate::entity::error::Error;
 use crate::util;
@@ -42,15 +43,20 @@ pub trait Token {
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
+/// Access token
 pub struct AccessToken {
+    /// Expiration time in seconds
     pub exp: usize,
+    /// User ID
     pub uid: i64,
+    /// Permission level
     pub permission: i8,
 }
 
 impl Token for AccessToken {}
 
 impl AccessToken {
+    /// Create a new access token
     pub fn new(uid: i64, permission: i8) -> Self {
         let expire_time = util::get_utc_seconds() + ACCESS_TOKEN_MINS * 60;
 
@@ -83,14 +89,18 @@ impl<'r> FromRequest<'r> for AccessToken {
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
+/// Refresh token
 pub struct RefreshToken {
-    pub exp: usize,
-    pub uid: i64,
+    /// Expiration time in seconds
+    pub exp: usize, 
+    /// User ID
+    pub uid: i64,  
 }
 
 impl Token for RefreshToken {}
 
 impl RefreshToken {
+    /// Create a new refresh token
     pub fn new(uid: i64) -> Self {
         let expire_time = util::get_utc_seconds() + REFRESH_TOKEN_DAYS * 24 * 60 * 60;
 
